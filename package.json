@@ -1,0 +1,22 @@
+{
+  "name": "even-g2-calculator-launcher",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "evenhub qr --path \"/\" --http && vite",
+    "dev:stt": "node server/stt-proxy.mjs",
+    "dev:full": "concurrently \"npm:dev:stt\" \"npm:dev\"",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@evenrealities/even_hub_sdk": "^0.0.7",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "typescript": "^5.9.2",
+    "vite": "^7.3.1"
+  }
+}
