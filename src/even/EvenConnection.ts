@@ -45,7 +45,6 @@ export class EvenConnection implements IEvenConnection {
   private iconImageData: number[] | null = null;
   private speechEnabled = false;
   private lastDisplayLines: string[] = ["CALC G2", "> 0", "= 0"];
-  private lastFallbackClickAt = 0;
 
   private static readonly TITLE_CONTAINER_ID = 1;
   private static readonly TITLE_CONTAINER_NAME = "calc-title";
@@ -278,11 +277,10 @@ export class EvenConnection implements IEvenConnection {
       return;
     }
 
-    if (eventType === OsEventTypeList.DOUBLE_CLICK_EVENT) {
-    return; // ignora apenas o duplo clique
-    }
-
-    if (eventType === OsEventTypeList.CLICK_EVENT) {
+    if (
+      eventType === OsEventTypeList.CLICK_EVENT ||
+      eventType === OsEventTypeList.DOUBLE_CLICK_EVENT
+    ) {
       const selected = EvenConnection.KEYS[this.selectedKeyIndex];
       const mapped = this.mapKeyToInput(selected);
       if (!mapped) return;
@@ -315,7 +313,7 @@ export class EvenConnection implements IEvenConnection {
     // Fallback used in other projects too: some hosts push sysEvent/listEvent without normalized eventType.
     if (rawJson.includes("scroll_top")) return OsEventTypeList.SCROLL_TOP_EVENT;
     if (rawJson.includes("scroll_bottom")) return OsEventTypeList.SCROLL_BOTTOM_EVENT;
-    if (rawJson.includes("click") || rawJson.includes("t14")) return this.inferClickOrDoubleFromTiming();
+    if (rawJson.includes("click") || rawJson.includes("t14")) return OsEventTypeList.CLICK_EVENT;
 
     return undefined;
   }
@@ -328,22 +326,12 @@ export class EvenConnection implements IEvenConnection {
     const sig = `${ctorName} ${tag}`;
 
     // In some simulator builds, click arrives as sysEvent class t14 with undefined eventType.
-    if (sig.includes("t14")) return this.inferClickOrDoubleFromTiming();
+    if (sig.includes("t14")) return OsEventTypeList.CLICK_EVENT;
     if (sig.includes("t15")) return OsEventTypeList.DOUBLE_CLICK_EVENT;
     if (sig.includes("t12")) return OsEventTypeList.SCROLL_TOP_EVENT;
     if (sig.includes("t13")) return OsEventTypeList.SCROLL_BOTTOM_EVENT;
 
     return undefined;
-  }
-
-  private inferClickOrDoubleFromTiming(): OsEventTypeList {
-    const now = Date.now();
-    const delta = now - this.lastFallbackClickAt;
-    this.lastFallbackClickAt = now;
-    if (delta > 0 && delta < 300) {
-      return OsEventTypeList.DOUBLE_CLICK_EVENT;
-    }
-    return OsEventTypeList.CLICK_EVENT;
   }
 
   private async updateKeypadText(): Promise<void> {
