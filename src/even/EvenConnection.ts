@@ -313,7 +313,18 @@ export class EvenConnection implements IEvenConnection {
     // Fallback used in other projects too: some hosts push sysEvent/listEvent without normalized eventType.
     if (rawJson.includes("scroll_top")) return OsEventTypeList.SCROLL_TOP_EVENT;
     if (rawJson.includes("scroll_bottom")) return OsEventTypeList.SCROLL_BOTTOM_EVENT;
-    if (rawJson.includes("click") || rawJson.includes("t14")) return OsEventTypeList.CLICK_EVENT;
+    if (
+      rawJson.includes("click") ||
+      rawJson.includes("t14") ||
+      rawJson.includes("single") ||
+      rawJson.includes("tap") ||
+      rawJson.includes("press")
+    ) {
+      return OsEventTypeList.CLICK_EVENT;
+    }
+    if (event.sysEvent && !event.textEvent && !event.listEvent) {
+      return OsEventTypeList.CLICK_EVENT;
+    }
 
     return undefined;
   }
@@ -327,6 +338,9 @@ export class EvenConnection implements IEvenConnection {
 
     // In some simulator builds, click arrives as sysEvent class t14 with undefined eventType.
     if (sig.includes("t14")) return OsEventTypeList.CLICK_EVENT;
+    if (sig.includes("tap") || sig.includes("single") || sig.includes("press")) {
+      return OsEventTypeList.CLICK_EVENT;
+    }
     if (sig.includes("t15")) return OsEventTypeList.DOUBLE_CLICK_EVENT;
     if (sig.includes("t12")) return OsEventTypeList.SCROLL_TOP_EVENT;
     if (sig.includes("t13")) return OsEventTypeList.SCROLL_BOTTOM_EVENT;
