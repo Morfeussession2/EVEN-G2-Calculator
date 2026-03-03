@@ -7,7 +7,7 @@
     "dev": "evenhub qr --path \"/\" --http && vite",
     "dev:stt": "node server/stt-proxy.mjs",
     "dev:full": "concurrently \"npm:dev:stt\" \"npm:dev\"",
-    "build": "node ./node_modules/typescript/bin/tsc --noEmit && vite build",
+    "build": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/vite/bin/vite.js build",
     "preview": "vite preview"
   },
   "dependencies": {
