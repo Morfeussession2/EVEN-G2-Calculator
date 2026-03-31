@@ -1,4 +1,4 @@
-﻿import {
+import {
   CreateStartUpPageContainer,
   DeviceConnectType,
   ImageContainerProperty,
@@ -13,6 +13,8 @@
 } from "@evenrealities/even_hub_sdk";
 import { GLASSES_LAYOUT } from "./EvenDisplay";
 import { encodeGrayscalePng } from "./pngEncoder";
+
+const iconPngUrl = "/favicon.ico";
 
 export type ConnectionState = "disconnected" | "connecting" | "connected";
 
@@ -193,7 +195,6 @@ export class EvenConnection implements IEvenConnection {
       width: GLASSES_LAYOUT.display.width,
       height: GLASSES_LAYOUT.display.height,
       borderWidth: 1,
-      borderRadius: 10,
       containerID: EvenConnection.DISPLAY_CONTAINER_ID,
       containerName: EvenConnection.DISPLAY_CONTAINER_NAME,
       content: `${"0".padStart(GLASSES_LAYOUT.displayLineWidth)}\n${"0".padStart(GLASSES_LAYOUT.displayLineWidth)}`,
@@ -206,7 +207,6 @@ export class EvenConnection implements IEvenConnection {
       width: GLASSES_LAYOUT.keypad.width,
       height: GLASSES_LAYOUT.keypad.height,
       borderWidth: 1,
-      borderRadius: 14,
       containerID: EvenConnection.KEYPAD_CONTAINER_ID,
       containerName: EvenConnection.KEYPAD_CONTAINER_NAME,
       content: this.renderKeypadText(),
