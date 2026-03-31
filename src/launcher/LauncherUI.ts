@@ -1,23 +1,19 @@
-﻿import type { CalculatorEngine, CalculatorOperator } from "../calculator/CalculatorEngine";
+import type { CalculatorEngine, CalculatorOperator } from "../calculator/CalculatorEngine";
 import { renderCalculator } from "../calculator/CalculatorUI";
 import type { EvenDisplay } from "../even/EvenDisplay";
 import type { IEvenConnection } from "../even/EvenConnection";
-// V1: speech pipeline disabled.
-// import { PcmSpeechTranscriber } from "../speech/PcmSpeechTranscriber";
 
 export class LauncherUI {
   private readonly app: HTMLElement;
   private readonly statusEl: HTMLSpanElement;
-  private readonly errorEl: HTMLParagraphElement;
-  private readonly displayPreviewEl: HTMLPreElement;
-  private readonly connectButton: HTMLButtonElement;
-  private readonly speechEl: HTMLParagraphElement;
+  private readonly historyListEl: HTMLElement;
+  private readonly sidebarEl: HTMLElement;
+  private readonly overlayEl: HTMLElement;
+  private readonly displayOpEl: HTMLDivElement;
+  private readonly displayResEl: HTMLDivElement;
+  private readonly history: string[] = [];
+
   private unsubscribeGlassesKey: (() => void) | null = null;
-  private unsubscribeSpeechState: (() => void) | null = null;
-  private unsubscribeSpeechText: (() => void) | null = null;
-  private unsubscribeSpeechPcm: (() => void) | null = null;
-  // V1: speech pipeline disabled.
-  // private readonly transcriber: PcmSpeechTranscriber;
 
   public constructor(
     private readonly connection: IEvenConnection,
@@ -30,112 +26,84 @@ export class LauncherUI {
     this.app = app;
     this.app.innerHTML = "";
 
-    // V1: speech pipeline disabled.
-    // this.transcriber = new PcmSpeechTranscriber({ ... });
+    // ── Build Header ──
+    const header = document.createElement("header");
+
+    const historyTab = document.createElement("button");
+    historyTab.className = "tab";
+    historyTab.textContent = "History";
+    historyTab.addEventListener("click", () => this.toggleHistory(true));
 
     const title = document.createElement("h1");
-    title.textContent = "Even G2 Calculator Launcher";
+    const titleSpan = document.createElement("span");
+    titleSpan.textContent = "Calculator";
+    titleSpan.style.fontFamily = "'FK Grotesk Neue', sans-serif";
+    titleSpan.style.fontSize = "17px";
+    title.appendChild(titleSpan);
 
-    this.connectButton = document.createElement("button");
-    this.connectButton.textContent = "Connect G2";
+    const emptyRight = document.createElement("div"); // For balance
+    emptyRight.style.width = "60px";
 
-    const statusWrapper = document.createElement("p");
-    statusWrapper.textContent = "Status: ";
-    this.statusEl = document.createElement("span");
-    statusWrapper.appendChild(this.statusEl);
+    header.append(historyTab, title, emptyRight);
 
-    this.errorEl = document.createElement("p");
-    this.errorEl.style.color = "#ff9a9a";
-    this.speechEl = document.createElement("p");
-    this.speechEl.textContent = "Speak: OFF";
+    // ── Build Sidebar (History) ──
+    this.sidebarEl = document.createElement("div");
+    this.sidebarEl.id = "history-sidebar";
 
-    const actions = document.createElement("div");
-    actions.className = "actions";
+    const historyTitle = document.createElement("h2");
+    historyTitle.textContent = "History";
 
-    const openCalcButton = document.createElement("button");
-    openCalcButton.textContent = "Open Calculator";
+    this.historyListEl = document.createElement("div");
+    this.historyListEl.className = "history-list";
 
-    const clearDisplayButton = document.createElement("button");
-    clearDisplayButton.textContent = "Clear Display";
+    this.sidebarEl.append(historyTitle, this.historyListEl);
 
-    actions.append(this.connectButton, openCalcButton, clearDisplayButton);
+    this.overlayEl = document.createElement("div");
+    this.overlayEl.className = "overlay";
+    this.overlayEl.addEventListener("click", () => this.toggleHistory(false));
+
+    // ── Build Main (Keypad) ──
+    const container = document.createElement("div");
+    container.id = "app-container";
+
+    const displayEl = document.createElement("div");
+    displayEl.id = "calculator-display";
+
+    this.displayOpEl = document.createElement("div");
+    this.displayOpEl.id = "display-operation";
+
+    this.displayResEl = document.createElement("div");
+    this.displayResEl.id = "display-result";
+
+    displayEl.append(this.displayOpEl, this.displayResEl);
 
     const keypad = this.createKeypad();
+    container.append(displayEl, keypad);
 
-    const debugTitle = document.createElement("h2");
-    debugTitle.textContent = "Display Preview";
+    // ── Build Diagnostics (Subtle Footer) ──
+    const diag = document.createElement("div");
+    diag.className = "diagnostics";
 
-    this.displayPreviewEl = document.createElement("pre");
-    this.displayPreviewEl.className = "preview";
+    this.statusEl = document.createElement("span");
+    this.statusEl.textContent = this.connection.getState();
 
-    this.app.append(
-      title,
-      statusWrapper,
-      this.speechEl,
-      this.errorEl,
-      actions,
-      keypad,
-      debugTitle,
-      this.displayPreviewEl,
-    );
+    diag.append(this.statusEl);
 
+    // ── Montage ──
+    document.body.prepend(header, this.sidebarEl, this.overlayEl);
+    this.app.append(container, diag);
+
+    // ── Subscriptions ──
     this.connection.subscribe((state) => {
       this.statusEl.textContent = state;
-      this.connectButton.textContent = state === "connected" ? "Disconnect G2" : "Connect G2";
-      if (state !== "disconnected") {
-        this.errorEl.textContent = "";
-      }
       if (state !== "connected") {
         this.unsubscribeGlassesKey?.();
         this.unsubscribeGlassesKey = null;
-        this.unsubscribeSpeechState?.();
-        this.unsubscribeSpeechState = null;
-        this.unsubscribeSpeechText?.();
-        this.unsubscribeSpeechText = null;
-        this.unsubscribeSpeechPcm?.();
-        this.unsubscribeSpeechPcm = null;
-        this.speechEl.textContent = "Speak: OFF";
       }
     });
 
-    this.connectButton.addEventListener("click", async () => {
-      if (this.connection.getState() === "connected") {
-        await this.connection.disconnect();
-        return;
-      }
-
-      try {
-        await this.connection.connect();
-        this.unsubscribeGlassesKey?.();
-        this.unsubscribeGlassesKey = this.connection.subscribeGlassesKey(async (key) => {
-          this.applyKey(key);
-          await this.safeSend(renderCalculator(this.calculator.getState()));
-        });
-
-        // V1: speech/double-click disabled.
-        this.unsubscribeSpeechState?.();
-        this.unsubscribeSpeechState = this.connection.subscribeSpeechState(() => {
-          this.speechEl.textContent = "Speak: OFF";
-        });
-        this.unsubscribeSpeechText?.();
-        this.unsubscribeSpeechPcm?.();
-
-        await this.safeSend(["CALC G2 READY", "> 0", "= 0"]);
-      } catch (error) {
-        this.errorEl.textContent = `Connection error: ${String(error)}`;
-      }
-    });
-
-    openCalcButton.addEventListener("click", async () => {
-      await this.safeSend(renderCalculator(this.calculator.getState()));
-    });
-
-    clearDisplayButton.addEventListener("click", async () => {
-      this.calculator.pressClear();
-      await this.safeSend(renderCalculator(this.calculator.getState()));
-    });
-
-    void this.safeSend(renderCalculator(this.calculator.getState()));
+    void this.updateDisplay();
+    void this.handleConnection();
   }
 
   private createKeypad(): HTMLElement {
@@ -143,75 +111,110 @@ export class LauncherUI {
     keypad.className = "keypad";
 
     const keys: string[] = [
-      "7",
-      "8",
-      "9",
-      "÷",
-      "4",
-      "5",
-      "6",
-      "x",
-      "1",
-      "2",
-      "3",
-      "-",
-      "0",
-      "C",
-      "=",
-      "+",
+      "7", "8", "9", "÷",
+      "4", "5", "6", "x",
+      "1", "2", "3", "-",
+      "0", "C", "=", "+"
     ];
 
     for (const key of keys) {
       const button = document.createElement("button");
       button.type = "button";
+      button.className = "key";
+
+      if (["÷", "x", "-", "+"].includes(key)) button.classList.add("operator");
+      if (key === "=") button.classList.add("equals");
+      if (key === "C") button.classList.add("clear");
+
       button.textContent = key;
-      button.addEventListener("click", async () => {
-        this.applyKey(key);
-        await this.safeSend(renderCalculator(this.calculator.getState()));
-      });
+      button.addEventListener("click", () => this.applyKey(key));
       keypad.appendChild(button);
     }
 
     return keypad;
   }
 
-  private applyKey(key: string): void {
-    if (key === "÷") key = "/";
-    if (key === "x") key = "*";
+  private async applyKey(key: string): Promise<void> {
+    const prevMask = this.calculator.getState().inputMask;
 
-    if (key === "C") {
+    let k = key;
+    if (k === "÷") k = "/";
+    if (k === "x") k = "*";
+
+    if (k === "C") {
       this.calculator.pressClear();
-      return;
-    }
-
-    if (key === "=") {
+    } else if (k === "=") {
       this.calculator.pressEquals();
-      return;
+      const state = this.calculator.getState();
+      if (!state.error) {
+        this.addToHistory(`${prevMask} = ${state.resultValue}`);
+      }
+    } else if (["+", "-", "*", "/"].includes(k)) {
+      this.calculator.pressOperator(k as CalculatorOperator);
+    } else {
+      this.calculator.pressDigit(k);
     }
 
-    if (["+", "-", "*", "/"].includes(key)) {
-      this.calculator.pressOperator(key as CalculatorOperator);
-      return;
-    }
-
-    this.calculator.pressDigit(key);
+    await this.updateDisplay();
   }
 
-  private async safeSend(lines: string[]): Promise<void> {
-    this.displayPreviewEl.textContent = lines.join("\n");
+  private addToHistory(entry: string): void {
+    if (this.history[0] === entry) return; // Dedupe
+    this.history.unshift(entry);
+    if (this.history.length > 20) this.history.pop();
+    this.renderHistory();
+  }
 
-    if (this.connection.getState() !== "connected") {
+  private renderHistory(): void {
+    this.historyListEl.innerHTML = "";
+    if (this.history.length === 0) {
+      this.historyListEl.innerHTML = '<div class="history-item">No calculations yet</div>';
+      return;
+    }
+    for (const entry of this.history) {
+      const item = document.createElement("div");
+      item.className = "history-item";
+      item.textContent = entry;
+      this.historyListEl.appendChild(item);
+    }
+  }
+
+  private toggleHistory(open: boolean): void {
+    this.sidebarEl.classList.toggle("open", open);
+    this.overlayEl.classList.toggle("visible", open);
+  }
+
+  private async handleConnection(): Promise<void> {
+    if (this.connection.getState() === "connected") {
+      await this.connection.disconnect();
       return;
     }
 
     try {
-      await this.display.sendText(lines);
-    } catch (error) {
-      this.errorEl.textContent = `Send error: ${String(error)}`;
-      console.error("Failed to send text:", error);
+      await this.connection.connect();
+      this.unsubscribeGlassesKey?.();
+      this.unsubscribeGlassesKey = this.connection.subscribeGlassesKey(async (key) => {
+        await this.applyKey(key);
+      });
+      await this.updateDisplay();
+    } catch (err) {
+      console.error("Connection failed:", err);
     }
   }
 
-  // V1: speech parsing disabled.
-  // private parseVoiceToKeys(input: string): string[] { ... }
+  private async updateDisplay(): Promise<void> {
+    const state = this.calculator.getState();
+    const lines = renderCalculator(state);
+
+    this.displayOpEl.textContent = state.inputMask;
+    this.displayResEl.textContent = state.error ? `Error: ${state.error}` : state.resultValue;
+
+    if (this.connection.getState() === "connected") {
+      try {
+        await this.display.sendText(lines);
+      } catch (err) {
+        console.error("Failed to send text:", err);
+      }
+    }
+  }
 }

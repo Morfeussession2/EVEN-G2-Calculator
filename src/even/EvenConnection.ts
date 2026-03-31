@@ -11,7 +11,6 @@
   type EvenAppBridge,
   type EvenHubEvent,
 } from "@evenrealities/even_hub_sdk";
-import iconPngUrl from "../../Midias/Evencalc-02.png";
 import { GLASSES_LAYOUT } from "./EvenDisplay";
 import { encodeGrayscalePng } from "./pngEncoder";
 
@@ -194,7 +193,7 @@ export class EvenConnection implements IEvenConnection {
       width: GLASSES_LAYOUT.display.width,
       height: GLASSES_LAYOUT.display.height,
       borderWidth: 1,
-      borderRdaius: 10,
+      borderRadius: 10,
       containerID: EvenConnection.DISPLAY_CONTAINER_ID,
       containerName: EvenConnection.DISPLAY_CONTAINER_NAME,
       content: `${"0".padStart(GLASSES_LAYOUT.displayLineWidth)}\n${"0".padStart(GLASSES_LAYOUT.displayLineWidth)}`,
@@ -207,7 +206,7 @@ export class EvenConnection implements IEvenConnection {
       width: GLASSES_LAYOUT.keypad.width,
       height: GLASSES_LAYOUT.keypad.height,
       borderWidth: 1,
-      borderRdaius: 14,
+      borderRadius: 14,
       containerID: EvenConnection.KEYPAD_CONTAINER_ID,
       containerName: EvenConnection.KEYPAD_CONTAINER_NAME,
       content: this.renderKeypadText(),
@@ -420,7 +419,7 @@ export class EvenConnection implements IEvenConnection {
 
   private renderHeaderText(): string {
     const state = this.speechEnabled ? "" : "";
-    return `${"Even-Calc".padEnd(GLASSES_LAYOUT.headerPad, " ")}${state}`;
+    return `${"Calculator".padEnd(GLASSES_LAYOUT.headerPad, " ")}${state}`;
   }
 
   private async updateHeaderText(): Promise<void> {
@@ -466,11 +465,11 @@ export class EvenConnection implements IEvenConnection {
         typeof OffscreenCanvas !== "undefined"
           ? new OffscreenCanvas(width, height)
           : (() => {
-              const c = document.createElement("canvas");
-              c.width = width;
-              c.height = height;
-              return c;
-            })();
+            const c = document.createElement("canvas");
+            c.width = width;
+            c.height = height;
+            return c;
+          })();
       const ctx = canvas.getContext("2d") as
         | OffscreenCanvasRenderingContext2D
         | CanvasRenderingContext2D

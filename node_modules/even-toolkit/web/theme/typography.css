@@ -1,0 +1,57 @@
+/* Even Realities — 8 FK Grotesk Text Styles */
+
+.text-vlarge-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: -0.72px;
+}
+
+.text-large-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.6px;
+}
+
+.text-medium-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.17px;
+}
+
+.text-medium-body {
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 300;
+  letter-spacing: -0.17px;
+}
+
+.text-normal-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: -0.15px;
+}
+
+.text-normal-body {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 300;
+  letter-spacing: -0.15px;
+}
+
+.text-subtitle {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: -0.13px;
+}
+
+.text-detail {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: -0.11px;
+}

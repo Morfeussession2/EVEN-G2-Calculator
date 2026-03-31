@@ -1,0 +1,46 @@
+/* Even Realities — Dark Theme Preset */
+:root {
+  /* Text Colors */
+  --color-text: #f0ebe3;
+  --color-text-dim: #8a7f72;
+  --color-text-muted: #5c5347;
+  --color-text-highlight: #FFFFFF;
+
+  /* Background Colors */
+  --color-bg: #0c0a07;
+  --color-surface: #161310;
+  --color-surface-light: #201c17;
+  --color-surface-lighter: #2c2620;
+
+  /* Border Colors */
+  --color-border: #28221a;
+  --color-border-light: #3a3228;
+
+  /* Accent & Semantic */
+  --color-accent: #FFFFFF;
+  --color-accent-alpha: rgba(255,255,255,0.12);
+  --color-accent-warning: #FEF991;
+
+  /* Status */
+  --color-positive: #26a69a;
+  --color-positive-alpha: rgba(38,166,154,0.50);
+  --color-negative: #ef5350;
+  --color-negative-alpha: rgba(239,83,80,0.15);
+
+  /* Overlay & Input */
+  --color-overlay: rgba(0,0,0,0.60);
+  --color-input-bg: rgba(255,255,255,0.08);
+
+  /* Layout */
+  --radius-default: 6px;
+  --spacing-margin: 12px;
+  --spacing-card-margin: 16px;
+  --spacing-same: 6px;
+  --spacing-cross: 12px;
+  --spacing-section: 24px;
+
+  /* Fonts */
+  --font-display: "FK Grotesk Neue", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: "FK Grotesk Neue", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "SF Mono", "Cascadia Code", "Fira Code", monospace;
+}

@@ -1,0 +1,46 @@
+/* Even Realities — Light Theme (Design Guidelines compliant) */
+:root {
+  /* Text Colors */
+  --color-text: #232323;            /* TC-1st */
+  --color-text-dim: #7B7B7B;        /* TC-2nd */
+  --color-text-muted: #7B7B7B;      /* TC-2nd alias */
+  --color-text-highlight: #FFFFFF;   /* TC-Highlight */
+
+  /* Background Colors */
+  --color-bg: #EEEEEE;              /* BC-3rd (Main) */
+  --color-surface: #FFFFFF;          /* BC-1st */
+  --color-surface-light: #F6F6F6;   /* BC-2nd */
+  --color-surface-lighter: #E4E4E4; /* BC-4th */
+
+  /* Border Colors */
+  --color-border: #E4E4E4;          /* BC-4th */
+  --color-border-light: #EEEEEE;    /* BC-3rd */
+
+  /* Accent & Semantic */
+  --color-accent: #232323;                /* BC-Highlight */
+  --color-accent-alpha: rgba(35,35,35,0.08);  /* SC-2nd */
+  --color-accent-warning: #FEF991;        /* BC-Accent */
+
+  /* Status */
+  --color-positive: #4BB956;              /* TC-Green */
+  --color-positive-alpha: rgba(75,185,86,0.15);
+  --color-negative: #FF453A;              /* TC-Red */
+  --color-negative-alpha: rgba(255,69,58,0.15);
+
+  /* Overlay & Input */
+  --color-overlay: rgba(0,0,0,0.50);      /* SC-1st */
+  --color-input-bg: rgba(35,35,35,0.08);  /* SC-2nd */
+
+  /* Layout */
+  --radius-default: 6px;
+  --spacing-margin: 12px;
+  --spacing-card-margin: 16px;
+  --spacing-same: 6px;
+  --spacing-cross: 12px;
+  --spacing-section: 24px;
+
+  /* Fonts */
+  --font-display: "FK Grotesk Neue", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: "FK Grotesk Neue", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "SF Mono", "Cascadia Code", "Fira Code", monospace;
+}

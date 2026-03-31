@@ -1,5 +1,6 @@
 import type { CalculatorState } from "./CalculatorEngine";
-import { MAX_CHARS_PER_LINE } from "../even/EvenDisplay";
+
+const MAX_CHARS_PER_LINE = 24;
 
 function fitLine(input: string): string {
   const asciiOnly = input
