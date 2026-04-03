@@ -32,6 +32,8 @@ export interface IEvenConnection {
   disconnect(): Promise<void>;
   sendText(lines: string[]): Promise<void>;
   setLogHandler(handler: (msg: string) => void): void;
+  setLocalStorage(key: string, value: string): Promise<boolean>;
+  getLocalStorage(key: string): Promise<string>;
 }
 
 export class EvenConnection implements IEvenConnection {
@@ -180,6 +182,30 @@ export class EvenConnection implements IEvenConnection {
 
     const payload = this.formatDisplayContent(lines);
     await this.updateDisplayContent(payload);
+  }
+
+  public async setLocalStorage(key: string, value: string): Promise<boolean> {
+    if (!this.bridge) {
+      this.bridge = await waitForEvenAppBridge();
+    }
+    try {
+      return await this.bridge.setLocalStorage(key, value);
+    } catch (e) {
+      this.log(`setLocalStorage Error: ${String(e)}`);
+      return false;
+    }
+  }
+
+  public async getLocalStorage(key: string): Promise<string> {
+    if (!this.bridge) {
+      this.bridge = await waitForEvenAppBridge();
+    }
+    try {
+      return await this.bridge.getLocalStorage(key);
+    } catch (e) {
+      this.log(`getLocalStorage Error: ${String(e)}`);
+      return "";
+    }
   }
 
   private setState(next: ConnectionState): void {

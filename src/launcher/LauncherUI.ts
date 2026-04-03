@@ -11,7 +11,8 @@ export class LauncherUI {
   private readonly overlayEl: HTMLElement;
   private readonly displayOpEl: HTMLDivElement;
   private readonly displayResEl: HTMLDivElement;
-  private readonly history: string[] = [];
+  private readonly reconnectBtn: HTMLButtonElement;
+  private history: string[] = [];
 
   private unsubscribeGlassesKey: (() => void) | null = null;
 
@@ -87,7 +88,12 @@ export class LauncherUI {
     this.statusEl = document.createElement("span");
     this.statusEl.textContent = this.connection.getState();
 
-    diag.append(this.statusEl);
+    this.reconnectBtn = document.createElement("button");
+    this.reconnectBtn.textContent = "Reconnect";
+    this.reconnectBtn.className = "reconnect-btn";
+    this.reconnectBtn.addEventListener("click", () => this.handleConnection());
+
+    diag.append(this.statusEl, this.reconnectBtn);
 
     // ── Montage ──
     document.body.prepend(header, this.sidebarEl, this.overlayEl);
@@ -96,14 +102,22 @@ export class LauncherUI {
     // ── Subscriptions ──
     this.connection.subscribe((state) => {
       this.statusEl.textContent = state;
+      this.statusEl.className = `status-${state}`;
+      this.reconnectBtn.disabled = state === "connecting" || state === "connected";
+      this.reconnectBtn.style.display = state === "connected" ? "none" : "inline-block";
+
       if (state !== "connected") {
         this.unsubscribeGlassesKey?.();
         this.unsubscribeGlassesKey = null;
       }
     });
 
+    void this.loadHistory();
     void this.updateDisplay();
-    void this.handleConnection();
+    // Auto-connect once on start if disconnected
+    if (this.connection.getState() === "disconnected") {
+      void this.handleConnection();
+    }
   }
 
   private createKeypad(): HTMLElement {
@@ -163,6 +177,27 @@ export class LauncherUI {
     this.history.unshift(entry);
     if (this.history.length > 20) this.history.pop();
     this.renderHistory();
+    void this.saveHistory();
+  }
+
+  private async loadHistory(): Promise<void> {
+    try {
+      const saved = await this.connection.getLocalStorage("calc_history");
+      if (saved) {
+        this.history = JSON.parse(saved) as string[];
+        this.renderHistory();
+      }
+    } catch (e) {
+      console.error("Failed to load history:", e);
+    }
+  }
+
+  private async saveHistory(): Promise<void> {
+    try {
+      await this.connection.setLocalStorage("calc_history", JSON.stringify(this.history));
+    } catch (e) {
+      console.error("Failed to save history:", e);
+    }
   }
 
   private renderHistory(): void {

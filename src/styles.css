@@ -208,9 +208,53 @@ header .tab:hover {
   opacity: 1;
 }
 
-.diagnostics button {
-  padding: 4px 8px;
-  font-size: 11px;
-  border-radius: 4px;
+.diagnostics button.reconnect-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: var(--font-display);
+  background: var(--color-accent);
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 20px;
+  cursor: pointer;
+  color: var(--color-text);
+  font-weight: 500;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.diagnostics button.reconnect-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  background: #fffbbf;
+}
+
+.diagnostics button.reconnect-btn:active {
+  transform: translateY(0);
+}
+
+.diagnostics button.reconnect-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+.status-connected {
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.status-disconnected {
+  color: #d32f2f;
+}
+
+.status-connecting {
+  color: #f57c00;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
 }
 
