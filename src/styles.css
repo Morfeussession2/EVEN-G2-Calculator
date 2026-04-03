@@ -86,7 +86,7 @@ header .tab:hover {
 
 #display-operation {
   font-size: 17px;
-  color: var(--color-text-dim);
+  color: #1b5e20; /* Darker Green */
   margin-bottom: 8px;
   min-height: 1.2em;
   letter-spacing: -0.17px;
@@ -213,3 +213,4 @@ header .tab:hover {
   font-size: 11px;
   border-radius: 4px;
 }
+

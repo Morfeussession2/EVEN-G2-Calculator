@@ -16,7 +16,7 @@ function fitLine(input: string): string {
 }
 
 export function renderCalculator(state: CalculatorState): string[] {
-  const line1 = fitLine("CALC G2");
+  const line1 = "";
 
   if (state.error) {
     return [line1, fitLine(`> ${state.inputMask}`), fitLine("= 0")];

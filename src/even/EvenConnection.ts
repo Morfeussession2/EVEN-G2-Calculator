@@ -31,6 +31,7 @@ export interface IEvenConnection {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   sendText(lines: string[]): Promise<void>;
+  setLogHandler(handler: (msg: string) => void): void;
 }
 
 export class EvenConnection implements IEvenConnection {
@@ -43,9 +44,18 @@ export class EvenConnection implements IEvenConnection {
   private readonly glassesKeyListeners = new Set<GlassesKeyListener>();
   private readonly speechStateListeners = new Set<SpeechStateListener>();
   private selectedKeyIndex = 0;
-  private iconImageData: number[] | null = null;
   private speechEnabled = false;
-  private lastDisplayLines: string[] = ["CALC G2", "> 0", "= 0"];
+  private lastDisplayLines: string[] = ["", "> 0", "= 0"];
+  private onLog?: (msg: string) => void;
+
+  public setLogHandler(handler: (msg: string) => void): void {
+    this.onLog = handler;
+  }
+
+  private log(msg: string): void {
+    console.log(`[EvenConnection] ${msg}`);
+    this.onLog?.(msg);
+  }
 
   private static readonly TITLE_CONTAINER_ID = 1;
   private static readonly TITLE_CONTAINER_NAME = "calc-title";
@@ -53,8 +63,6 @@ export class EvenConnection implements IEvenConnection {
   private static readonly DISPLAY_CONTAINER_NAME = "calc-screen";
   private static readonly KEYPAD_CONTAINER_ID = 3;
   private static readonly KEYPAD_CONTAINER_NAME = "calc-keypad";
-  private static readonly ICON_CONTAINER_ID = 4;
-  private static readonly ICON_CONTAINER_NAME = "calc-icon";
 
   private static readonly KEYS: string[] = [
     "C",
@@ -106,11 +114,14 @@ export class EvenConnection implements IEvenConnection {
 
     try {
       this.bridge = await waitForEvenAppBridge();
+      this.log("Connecting to Even G2 Bridge...");
+      // waitForEvenAppBridge already returns an initialized bridge
 
       this.unsubscribeDeviceStatus = this.bridge.onDeviceStatusChanged((status) => {
         const isConnected =
           status.connectType === DeviceConnectType.Connected ||
           status.connectType === DeviceConnectType.Connecting;
+        this.log(`Device Status changed: ${status.connectType}`);
         this.setState(isConnected ? "connected" : "disconnected");
       });
 
@@ -119,8 +130,10 @@ export class EvenConnection implements IEvenConnection {
       });
 
       await this.ensureStartupPage();
+      this.log("Startup Page Check Complete.");
       this.setState("connected");
     } catch (error) {
+      this.log(`CONNECTION ERROR: ${String(error)}`);
       this.bridge = null;
       this.unsubscribeDeviceStatus?.();
       this.unsubscribeEvenHubEvent?.();
@@ -200,42 +213,36 @@ export class EvenConnection implements IEvenConnection {
       content: `${"0".padStart(GLASSES_LAYOUT.displayLineWidth)}\n${"0".padStart(GLASSES_LAYOUT.displayLineWidth)}`,
       isEventCapture: 0,
     });
-
-    const keypadContainer = new TextContainerProperty({
+    const keypadGrid = new TextContainerProperty({
       xPosition: GLASSES_LAYOUT.keypad.x,
       yPosition: GLASSES_LAYOUT.keypad.y,
       width: GLASSES_LAYOUT.keypad.width,
       height: GLASSES_LAYOUT.keypad.height,
-      borderWidth: 1,
+      isEventCapture: 1,
       containerID: EvenConnection.KEYPAD_CONTAINER_ID,
       containerName: EvenConnection.KEYPAD_CONTAINER_NAME,
-      content: this.renderKeypadText(),
-      isEventCapture: 1,
-    });
-
-    const iconContainer = new ImageContainerProperty({
-      xPosition: GLASSES_LAYOUT.icon.x,
-      yPosition: GLASSES_LAYOUT.icon.y,
-      width: GLASSES_LAYOUT.icon.width,
-      height: GLASSES_LAYOUT.icon.height,
-      containerID: EvenConnection.ICON_CONTAINER_ID,
-      containerName: EvenConnection.ICON_CONTAINER_NAME,
+      content: this.renderTextKeypadGrid(),
     });
 
     const container = new CreateStartUpPageContainer({
-      containerTotalNum: 4,
-      textObject: [titleContainer, displayContainer, keypadContainer],
-      imageObject: [iconContainer],
+      containerTotalNum: 3,
+      textObject: [titleContainer, displayContainer, keypadGrid],
+      imageObject: [],
     });
 
+
+    this.log("Creating StartUp Page Containers...");
     const result = await this.bridge.createStartUpPageContainer(container);
+    this.log(`createStartUpPageContainer result: ${result}`);
+
     if (result === 1) {
       const rebuild = new RebuildPageContainer({
-        containerTotalNum: 4,
-        textObject: [titleContainer, displayContainer, keypadContainer],
-        imageObject: [iconContainer],
+        containerTotalNum: 3,
+        textObject: [titleContainer, displayContainer, keypadGrid],
+        imageObject: [],
       });
       const rebuilt = await this.bridge.rebuildPageContainer(rebuild);
+      this.log(`rebuildPageContainer result: ${rebuilt}`);
       if (!rebuilt) {
         throw new Error("rebuildPageContainer failed after create returned invalid.");
       }
@@ -243,7 +250,7 @@ export class EvenConnection implements IEvenConnection {
       throw new Error(`createStartUpPageContainer failed with code ${result}`);
     }
 
-    await this.pushIconImage();
+    this.log("Startup UI Logic Complete.");
     this.startupPageCreated = true;
   }
 
@@ -258,6 +265,8 @@ export class EvenConnection implements IEvenConnection {
       textOrList?.containerID === EvenConnection.KEYPAD_CONTAINER_ID ||
       textOrList?.containerName === EvenConnection.KEYPAD_CONTAINER_NAME;
     const eventType = this.resolveEventType(event);
+
+    this.log(`Event Received: ${eventType !== undefined ? OsEventTypeList[eventType] : "UNKNOWN"} (ID: ${textOrList?.containerID})`);
 
     if (!fromKeypad && eventType !== OsEventTypeList.CLICK_EVENT && eventType !== OsEventTypeList.DOUBLE_CLICK_EVENT) {
       return;
@@ -354,22 +363,26 @@ export class EvenConnection implements IEvenConnection {
       new TextContainerUpgrade({
         containerID: EvenConnection.KEYPAD_CONTAINER_ID,
         containerName: EvenConnection.KEYPAD_CONTAINER_NAME,
-        content: this.renderKeypadText(),
+        content: this.renderTextKeypadGrid(),
       }),
     );
   }
 
-  private renderKeypadText(): string {
-    const rows = [0, 1, 2, 3].map((row) => {
-      const cols = [0, 1, 2, 3].map((col) => {
-        const index = row * 4 + col;
-        const key = EvenConnection.KEYS[index];
-        const base = key.padEnd(2, " ");
-        return index === this.selectedKeyIndex ? `[${base}]` : ` ${base} `;
-      });
-      return cols.join(" ");
-    });
-    return rows.join("\n");
+  private renderTextKeypadGrid(): string {
+    let result = "";
+    const cols = 4;
+    for (let r = 0; r < 4; r++) {
+      let rowStr = "";
+      for (let c = 0; c < 4; c++) {
+        const idx = r * cols + c;
+        const key = EvenConnection.KEYS[idx];
+        const isSelected = idx === this.selectedKeyIndex;
+        const keyStr = isSelected ? `[${key}]` : ` ${key} `;
+        rowStr += keyStr.padEnd(5, " ");
+      }
+      result += rowStr.trimEnd() + (r < 3 ? "\n" : "");
+    }
+    return result;
   }
 
   private mapKeyToInput(key: string): string | null {
@@ -418,8 +431,7 @@ export class EvenConnection implements IEvenConnection {
   }
 
   private renderHeaderText(): string {
-    const state = this.speechEnabled ? "" : "";
-    return `${"Calculator".padEnd(GLASSES_LAYOUT.headerPad, " ")}${state}`;
+    return "";
   }
 
   private async updateHeaderText(): Promise<void> {
@@ -432,68 +444,6 @@ export class EvenConnection implements IEvenConnection {
         content: this.renderHeaderText(),
       }),
     );
-  }
-
-  private async pushIconImage(): Promise<void> {
-    if (!this.bridge) return;
-
-    const imageData = await this.getIconImageData();
-    if (!imageData) return;
-
-    await this.bridge.updateImageRawData(
-      new ImageRawDataUpdate({
-        containerID: EvenConnection.ICON_CONTAINER_ID,
-        containerName: EvenConnection.ICON_CONTAINER_NAME,
-        imageData,
-      }),
-    );
-  }
-
-  private async getIconImageData(): Promise<number[] | null> {
-    if (this.iconImageData) return this.iconImageData;
-
-    try {
-      const response = await fetch(iconPngUrl);
-      if (!response.ok) return null;
-
-      const blob = await response.blob();
-      const bitmap = await createImageBitmap(blob);
-
-      const width = GLASSES_LAYOUT.icon.width;
-      const height = GLASSES_LAYOUT.icon.height;
-      const canvas =
-        typeof OffscreenCanvas !== "undefined"
-          ? new OffscreenCanvas(width, height)
-          : (() => {
-            const c = document.createElement("canvas");
-            c.width = width;
-            c.height = height;
-            return c;
-          })();
-      const ctx = canvas.getContext("2d") as
-        | OffscreenCanvasRenderingContext2D
-        | CanvasRenderingContext2D
-        | null;
-      if (!ctx) return null;
-
-      ctx.drawImage(bitmap, 0, 0, width, height);
-      const pixels = ctx.getImageData(0, 0, width, height).data;
-      const grayscale = new Uint8Array(width * height);
-
-      for (let i = 0; i < width * height; i += 1) {
-        const offset = i * 4;
-        const r = pixels[offset];
-        const g = pixels[offset + 1];
-        const b = pixels[offset + 2];
-        grayscale[i] = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
-      }
-
-      const encoded = encodeGrayscalePng(width, height, grayscale);
-      this.iconImageData = Array.from(encoded);
-      return this.iconImageData;
-    } catch {
-      return null;
-    }
   }
 
   private toAscii(input: string): string {
