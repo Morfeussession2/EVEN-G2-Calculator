@@ -204,7 +204,7 @@ header .tab:hover {
   transition: opacity 0.2s;
 }
 
-.diagnostics:hover {
+.diagnostics:hover, .diagnostics.disconnected-mode {
   opacity: 1;
 }
 

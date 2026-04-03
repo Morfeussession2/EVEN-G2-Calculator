@@ -89,7 +89,7 @@ export class LauncherUI {
     this.statusEl.textContent = this.connection.getState();
 
     this.reconnectBtn = document.createElement("button");
-    this.reconnectBtn.textContent = "Reconnect";
+    this.reconnectBtn.textContent = "Connect"; // Start with "Connect"
     this.reconnectBtn.className = "reconnect-btn";
     this.reconnectBtn.addEventListener("click", () => this.handleConnection());
 
@@ -103,8 +103,23 @@ export class LauncherUI {
     this.connection.subscribe((state) => {
       this.statusEl.textContent = state;
       this.statusEl.className = `status-${state}`;
-      this.reconnectBtn.disabled = state === "connecting" || state === "connected";
+      
+      // Update button text and state
+      if (state === "connecting") {
+        this.reconnectBtn.textContent = "Connecting...";
+        this.reconnectBtn.disabled = true;
+      } else {
+        this.reconnectBtn.textContent = "Connect";
+        this.reconnectBtn.disabled = state === "connected";
+      }
+
       this.reconnectBtn.style.display = state === "connected" ? "none" : "inline-block";
+      
+      // Make diagnostics more visible if disconnected
+      const diag = this.reconnectBtn.parentElement;
+      if (diag) {
+        diag.classList.toggle("disconnected-mode", state !== "connected");
+      }
 
       if (state !== "connected") {
         this.unsubscribeGlassesKey?.();
