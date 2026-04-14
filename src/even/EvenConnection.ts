@@ -1,4 +1,4 @@
-import {
+﻿import {
   CreateStartUpPageContainer,
   DeviceConnectType,
   ImageContainerProperty,
@@ -34,6 +34,7 @@ export interface IEvenConnection {
   setLogHandler(handler: (msg: string) => void): void;
   setLocalStorage(key: string, value: string): Promise<boolean>;
   getLocalStorage(key: string): Promise<string>;
+  shutDownPageContainerWithInteraction(): Promise<boolean>;
 }
 
 export class EvenConnection implements IEvenConnection {
@@ -208,6 +209,18 @@ export class EvenConnection implements IEvenConnection {
     }
   }
 
+  public async shutDownPageContainerWithInteraction(): Promise<boolean> {
+    if (!this.bridge) {
+      throw new Error("Even bridge is not initialized.");
+    }
+    try {
+      return await this.bridge.shutDownPageContainer(1);
+    } catch (e) {
+      this.log(`shutDownPageContainer Error: ${String(e)}`);
+      return false;
+    }
+  }
+
   private setState(next: ConnectionState): void {
     this.state = next;
     this.listeners.forEach((listener) => listener(next));
@@ -293,6 +306,12 @@ export class EvenConnection implements IEvenConnection {
     const eventType = this.resolveEventType(event);
 
     this.log(`Event Received: ${eventType !== undefined ? OsEventTypeList[eventType] : "UNKNOWN"} (ID: ${textOrList?.containerID})`);
+
+    // Handle double click from outside the keypad (show interaction layer)
+    if (!fromKeypad && eventType === OsEventTypeList.DOUBLE_CLICK_EVENT) {
+      await this.shutDownPageContainerWithInteraction();
+      return;
+    }
 
     if (!fromKeypad && eventType !== OsEventTypeList.CLICK_EVENT && eventType !== OsEventTypeList.DOUBLE_CLICK_EVENT) {
       return;

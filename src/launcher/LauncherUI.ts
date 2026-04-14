@@ -99,6 +99,9 @@ export class LauncherUI {
     document.body.prepend(header, this.sidebarEl, this.overlayEl);
     this.app.append(container, diag);
 
+    // ── Double Click to Shutdown ──
+    container.addEventListener("dblclick", () => this.handleDoubleClick());
+
     // ── Subscriptions ──
     this.connection.subscribe((state) => {
       this.statusEl.textContent = state;
@@ -249,6 +252,14 @@ export class LauncherUI {
       await this.updateDisplay();
     } catch (err) {
       console.error("Connection failed:", err);
+    }
+  }
+
+  private async handleDoubleClick(): Promise<void> {
+    try {
+      await this.connection.shutDownPageContainerWithInteraction();
+    } catch (err) {
+      console.error("Double click shutdown failed:", err);
     }
   }
 
